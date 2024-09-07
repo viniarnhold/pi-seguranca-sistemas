@@ -8,7 +8,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class SegurancaSistemas extends Thread {
+public class Cliente extends Thread {
 
     private static String FECHAR_SOCKET = "CLOSECONECTION";
     private static Socket socket;
@@ -17,7 +17,7 @@ public class SegurancaSistemas extends Thread {
     private static PrintWriter out;
     private static Tela tela;
 
-    public SegurancaSistemas(Socket socket) {
+    public Cliente(Socket socket) {
         this.socket = socket;
     }
 
@@ -48,7 +48,7 @@ public class SegurancaSistemas extends Thread {
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream());
             conexaoEstabelecida = true;
-            Thread thread = new SegurancaSistemas(socket);
+            Thread thread = new Cliente(socket);
             thread.start();
             while (true)
             { }
