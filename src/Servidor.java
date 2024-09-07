@@ -45,12 +45,12 @@ public class Servidor extends Thread {
 
     public void run() {
         try {
-            BufferedReader entrada = new BufferedReader( new InputStreamReader( this.conexao.getInputStream()));
-            PrintWriter out = new PrintWriter(conexao.getOutputStream());
+            BufferedReader in = new BufferedReader(new InputStreamReader(this.conexao.getInputStream()));
+            PrintWriter out = new PrintWriter(this.conexao.getOutputStream());
             conexoes.add(out);
 
             while (true) {
-                String mensagem = entrada.readLine();
+                String mensagem = in.readLine();
                 System.out.println(mensagem);
                 enviarMensagemChat(conexoes, mensagem);
             }
@@ -63,6 +63,7 @@ public class Servidor extends Thread {
         for (PrintWriter conexao : conexoes) {
             try {
                 conexao.println(mensagem);
+                conexao.flush();
             } catch (Exception e) {
                 System.out.println("Não foi possível enviar a mensagem");
                 e.printStackTrace();
