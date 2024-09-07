@@ -1,5 +1,4 @@
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -9,81 +8,66 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class SegurancaSistemas extends JFrame {
+public class SegurancaSistemas extends Thread {
 
     private static String FECHAR_SOCKET = "CLOSECONECTION";
-
-    private JTextArea chat;
-    private JButton botaoEnviar;
-    private JTextField campoDigitacao;
     private static Socket socket;
-    static BufferedReader in;
-    static PrintWriter out;
-    public static SegurancaSistemas tela;
+    private static boolean conexaoEstabelecida;
+    private static BufferedReader in;
+    private static PrintWriter out;
+    private static Tela tela;
 
-    public SegurancaSistemas(){
-        super("PI - Segurança em Sistemas - Vinícius Arnhold");
-        setSize(1280, 720);
-        setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-        getContentPane().setBackground(Color.GRAY);
-        setLayout(null);
-
-        // Área de visualização do chat
-        chat = new JTextArea();
-        chat.setBounds(10, 10, 1245, 620);
-        chat.setFont(new Font("Arial", Font.PLAIN, 16));
-        chat.setEditable(false);
-        chat.setLineWrap(true);
-        chat.setWrapStyleWord(true);
-        add(chat);
-
-        // Área de digitação de mensagem
-        campoDigitacao = new JTextField();
-        campoDigitacao.setBounds(10, 640, 1120, 30 );
-        campoDigitacao.setFont(new Font("Arial", Font.BOLD, 16));
-        add(campoDigitacao);
-
-        // Botão Enviar
-        botaoEnviar = new JButton( "Enviar");
-        botaoEnviar.setBounds(1140, 640, 115, 30 );
-        botaoEnviar.setBackground(Color.LIGHT_GRAY);
-        botaoEnviar.setActionCommand("Enviar");
-        botaoEnviar.addActionListener(acaoBotaoEnviar);
-        add(botaoEnviar);
-
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                fecharSocket();
-            }
-        });
+    public SegurancaSistemas(Socket socket) {
+        this.socket = socket;
     }
 
     public static void main(String[] args) throws Exception {
-        SegurancaSistemas tela = new SegurancaSistemas();
+        tela = new Tela();
         tela.setLocationRelativeTo(null);
         tela.setVisible(true);
-        socket = new Socket("localhost", 8084);
-        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        out = new PrintWriter(socket.getOutputStream());
-
+        tela.botaoEnviar.addActionListener(acaoBotaoEnviar);
+        tela.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    String mensagem = FECHAR_SOCKET;
+                    out.println(mensagem);
+                    out.flush();
+                    in.close();
+                    out.close();
+                    socket.close();
+                    conexaoEstabelecida = false;
+                    System.exit(0);
+                } catch (Exception erro) {
+                    System.err.println("Erro ao fechar a conexão: " + erro.getMessage());
+                }
+            }
+        });
+        try {
+            Socket socket = new Socket("localhost", 8084);
+            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            out = new PrintWriter(socket.getOutputStream());
+            conexaoEstabelecida = true;
+            Thread thread = new SegurancaSistemas(socket);
+            thread.start();
+            while (true)
+            { }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(tela, "Não foi possível estabelecer conexão" + e);
+        }
     }
 
-    ActionListener acaoBotaoEnviar = new ActionListener(){
+    static ActionListener acaoBotaoEnviar = new ActionListener(){
         public void actionPerformed(ActionEvent arg0) {
-            if( arg0.getActionCommand().equals( "Enviar" ) ) {
-                // Obter a String do campo JTextField
-                String mensagem = campoDigitacao.getText();
-                // Validação campo em branco
+            if(arg0.getActionCommand().equals("Enviar")) {
+                String mensagem = tela.campoDigitacao.getText();
                 if(mensagem.isBlank()){
                     JOptionPane.showMessageDialog(tela, "É necessário digitar uma mensagem para ser enviada!");
                 } else {
                     try {
                         out.println(mensagem);
                         out.flush();
-                        String novaMensagem = in.readLine();
-                        campoDigitacao.setText("");
-                        chat.setText(chat.getText() + novaMensagem + "\n");
+                        tela.campoDigitacao.setText("");
                     } catch (Exception exception){
                         JOptionPane.showMessageDialog(tela, "Não foi possível enviar a mensagem" + exception);
                     }
@@ -91,22 +75,17 @@ public class SegurancaSistemas extends JFrame {
             }
         }
     };
-    // Método para fechar o socket e os streams
-    private void fecharSocket() {
+
+    public void run() {
         try {
-            out.println(FECHAR_SOCKET);
-            out.flush();
-            if (out != null) {
-                out.close();
-            }
-            if (in != null) {
-                in.close();
-            }
-            if (socket != null) {
-                socket.close();
+            BufferedReader entrada =
+                    new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+            while (conexaoEstabelecida) {
+                String novaMensagem = entrada.readLine();
+                tela.chat.setText(tela.chat.getText() + novaMensagem + "\n");
             }
         } catch (Exception e) {
-            System.err.println("Erro ao fechar a conexão: " + e.getMessage());
+            JOptionPane.showMessageDialog(tela, "Não foi possível receber a mensagem do servidor" + e);
         }
     }
 }
