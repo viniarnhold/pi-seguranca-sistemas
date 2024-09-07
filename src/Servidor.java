@@ -9,6 +9,7 @@ public class Servidor extends Thread {
     private static List<PrintWriter> conexoes;
     private static String FECHAR_SOCKET = "CLOSECONECTION";
     private static Integer PORT = 8084;
+
     public Servidor(Socket socket) {
         this.conexao = socket;
     }
@@ -18,6 +19,7 @@ public class Servidor extends Thread {
         conexoes = new ArrayList<>();
         esperarConexoes(servidor);
     }
+
     public static ServerSocket iniciarServidor() {
         try {
             ServerSocket servidor = new ServerSocket(PORT);
@@ -38,7 +40,7 @@ public class Servidor extends Thread {
                 t.start();
             }
         } catch (Exception e) {
-            System.out.println("Houve um erro ao esbalecer conexão " + e.getMessage());
+            System.out.println("Houve um erro ao estabelecer conexão " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -51,11 +53,15 @@ public class Servidor extends Thread {
 
             while (true) {
                 String mensagem = in.readLine();
-                System.out.println(mensagem);
-                enviarMensagemChat(conexoes, mensagem);
+                if (mensagem.equals(FECHAR_SOCKET)) {
+                    conexoes.remove(out);
+                } else {
+                    System.out.println(mensagem);
+                    enviarMensagemChat(conexoes, mensagem);
+                }
             }
         } catch (Exception e) {
-            System.out.println("Falha na Conexao..." + e);
+            System.out.println("Falha na conexão com os clientes " + e);
         }
     }
 
