@@ -55,6 +55,9 @@ public class Servidor extends Thread {
                 String mensagem = in.readLine();
                 if (mensagem.equals(FECHAR_SOCKET)) {
                     conexoes.remove(out);
+                    if (conexoes.isEmpty()) {
+                        break;
+                    }
                 } else {
                     System.out.println(mensagem);
                     enviarMensagemChat(conexoes, mensagem);

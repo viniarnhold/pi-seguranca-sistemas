@@ -1,18 +1,16 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 public class Tela extends JFrame {
 
-    public static Tela tela;
     public JTextArea chat;
     public JButton botaoEnviar;
     public JTextField campoDigitacao;
-    public Tela(){
+
+    public Tela() {
         super("PI - Segurança em Sistemas - Vinícius Arnhold");
         setSize(1280, 720);
-        setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         getContentPane().setBackground(Color.GRAY);
         setLayout(null);
 
@@ -27,13 +25,13 @@ public class Tela extends JFrame {
 
         // Área de digitação de mensagem
         campoDigitacao = new JTextField();
-        campoDigitacao.setBounds(10, 640, 1120, 30 );
+        campoDigitacao.setBounds(10, 640, 1120, 30);
         campoDigitacao.setFont(new Font("Arial", Font.BOLD, 16));
         add(campoDigitacao);
 
         // Botão Enviar
-        botaoEnviar = new JButton( "Enviar");
-        botaoEnviar.setBounds(1140, 640, 115, 30 );
+        botaoEnviar = new JButton("Enviar");
+        botaoEnviar.setBounds(1140, 640, 115, 30);
         botaoEnviar.setBackground(Color.LIGHT_GRAY);
         botaoEnviar.setActionCommand("Enviar");
         add(botaoEnviar);

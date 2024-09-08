@@ -50,25 +50,23 @@ public class Cliente extends Thread {
             conexaoEstabelecida = true;
             Thread thread = new Cliente(socket);
             thread.start();
-            while (true)
-            { }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(tela, "Não foi possível estabelecer conexão" + e);
         }
     }
 
-    static ActionListener acaoBotaoEnviar = new ActionListener(){
+    static ActionListener acaoBotaoEnviar = new ActionListener() {
         public void actionPerformed(ActionEvent arg0) {
-            if(arg0.getActionCommand().equals("Enviar")) {
+            if (arg0.getActionCommand().equals("Enviar")) {
                 String mensagem = tela.campoDigitacao.getText();
-                if(mensagem.isBlank()){
+                if (mensagem.isBlank()) {
                     JOptionPane.showMessageDialog(tela, "É necessário digitar uma mensagem para ser enviada!");
                 } else {
                     try {
                         out.println(mensagem);
                         out.flush();
                         tela.campoDigitacao.setText("");
-                    } catch (Exception exception){
+                    } catch (Exception exception) {
                         JOptionPane.showMessageDialog(tela, "Não foi possível enviar a mensagem" + exception);
                     }
                 }
