@@ -7,10 +7,16 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 
 public class Cliente extends Thread {
 
     private static String FECHAR_SOCKET = "CLOSECONECTION";
+    private static String CHAVE_PUBLICA = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCZILVQdhKkRU0hLg4E9CKUbpci8kpm9VWXZ3bZvnduOJZuqnwk5huXIVmChoW6qdHO02XcXXYoFaJ7qVAzc9llfvRz23FeuqYoyJz5jZ02rP7oMuw+Sp74o0MNq6TxDLheYI6CWOG3YZSUmxwow8u2eYGR3lRf139MojG7vnMIBwIDAQAB";
+    private static PublicKey publicKey;
     private static Socket socket;
     private static boolean conexaoEstabelecida;
     private static BufferedReader in;
@@ -22,6 +28,7 @@ public class Cliente extends Thread {
     }
 
     public static void main(String[] args) throws Exception {
+        publicKey = converterPublicKey(CHAVE_PUBLICA);
         tela = new Tela();
         tela.setLocationRelativeTo(null);
         tela.setVisible(true);
@@ -84,6 +91,18 @@ public class Cliente extends Thread {
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(tela, "Não foi possível receber a mensagem do servidor" + e);
+        }
+    }
+
+    public static PublicKey converterPublicKey(String chavePublicaString){
+        byte[] encoded = Base64.getDecoder().decode(chavePublicaString);
+        try {
+            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            return keyFactory.generatePublic(keySpec);
+        } catch (Exception e){
+            System.out.println("Não foi possível converter a chave pública.");
+            throw new RuntimeException(e);
         }
     }
 }

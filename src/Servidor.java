@@ -1,12 +1,18 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public class Servidor extends Thread {
     private Socket conexao;
     private static List<PrintWriter> conexoes;
+    private static String CHAVE_PRIVADA = "MIICeAIBADANBgkqhkiG9w0BAQEFAASCAmIwggJeAgEAAoGBAJkgtVB2EqRFTSEuDgT0IpRulyLySmb1VZdndtm+d244lm6qfCTmG5chWYKGhbqp0c7TZdxddigVonupUDNz2WV+9HPbcV66pijInPmNnTas/ugy7D5KnvijQw2rpPEMuF5gjoJY4bdhlJSbHCjDy7Z5gZHeVF/Xf0yiMbu+cwgHAgMBAAECgYAjN0J7nqvq24VBfDX9LahGOqjHgLFbvFBS4ZiTuxn8X0c5bDvgwIrX1vOe8REQPL3jsvpaE6R404Dqr6WiL6JvONQmCp5/l1dZYmuGuQwyy8zQE8wfHCpVLZl2PsrOKmbWZKtbd2KU0K641j6BAp8aombHyTbTcOnkFdculB/xAQJBAOl62wwKP02HV5Mo4HcZC/8o6KAhf2LBGvlHm2Uf7kKLRAK6KLRlFeWskLUw3zCMpsjU5LxKPbe69FKInlcv130CQQCn5ccH2i0v2yLX4kc1uCTWEDm4XBbQ4NUayWB4gYeX0LC6MuvN0+5WV9HPPPbwuwgOIv3Yr/cN4EBmkasSOdzTAkEAk7myAsoxB2LM3EWO0Iw+dPFzTm4jZV59LKBMCA3N+LiZDYiv3IPg+PLYlGwZq2Qy2vsoxqHKrwdRMy9R0CRrGQJBAJTNJadE6xVlzqysg9YNXMBHYxCMtT/sc5Io9ZH3opefQnHTnX8vHCVz8aQM8QKLkGkPBBFeasPmgs0kvwwJMjcCQQCBZBeZa48OfRDh6VF0OA4K3IwCQwH/HkhPAylpSC7gnMyh+K+wJQcn7Cj5mczEGpwOLu9jFylkAkyI2ymypLC/";
+    private static PrivateKey privateKey;
     private static String FECHAR_SOCKET = "CLOSECONECTION";
     private static Integer PORT = 8084;
 
@@ -15,6 +21,7 @@ public class Servidor extends Thread {
     }
 
     public static void main(String args[]) {
+        privateKey = converterPrivateKey(CHAVE_PRIVADA);
         ServerSocket servidor = iniciarServidor();
         conexoes = new ArrayList<>();
         esperarConexoes(servidor);
@@ -77,6 +84,19 @@ public class Servidor extends Thread {
                 System.out.println("Não foi possível enviar a mensagem");
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static PrivateKey converterPrivateKey(String chavePrivadaString){
+        try{
+            byte[] keyBytes = Base64.getDecoder().decode(chavePrivadaString);
+
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyBytes);
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            return keyFactory.generatePrivate(keySpec);
+        } catch (Exception e){
+            System.out.println("Não foi possível converter a chave privada.");
+            throw new RuntimeException(e);
         }
     }
 }
