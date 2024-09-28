@@ -1,15 +1,15 @@
+import javax.crypto.Cipher;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 
 public class Cliente extends Thread {
@@ -19,8 +19,8 @@ public class Cliente extends Thread {
     private static PublicKey publicKey;
     private static Socket socket;
     private static boolean conexaoEstabelecida;
-    private static BufferedReader in;
-    private static PrintWriter out;
+    private static InputStream in;
+    private static OutputStream out;
     private static Tela tela;
 
     public Cliente(Socket socket) {
@@ -37,28 +37,30 @@ public class Cliente extends Thread {
             @Override
             public void windowClosing(WindowEvent e) {
                 try {
-                    String mensagem = FECHAR_SOCKET;
-                    out.println(mensagem);
-                    out.flush();
-                    in.close();
-                    out.close();
-                    socket.close();
-                    conexaoEstabelecida = false;
+                    if (conexaoEstabelecida) {
+                        String mensagem = FECHAR_SOCKET;
+                        byte[] mensagemCifrada = criptografar(mensagem);
+                        out.write(mensagemCifrada);
+                        out.flush();
+                        in.close();
+                        out.close();
+                        socket.close();
+                        conexaoEstabelecida = false;
+                    }
                     System.exit(0);
                 } catch (Exception erro) {
-                    System.err.println("Erro ao fechar a conexão: " + erro.getMessage());
+                    System.err.println("Erro ao fechar a conexão: " + erro);
                 }
             }
         });
         try {
             Socket socket = new Socket("localhost", 8084);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream());
+            out = socket.getOutputStream();
             conexaoEstabelecida = true;
             Thread thread = new Cliente(socket);
             thread.start();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(tela, "Não foi possível estabelecer conexão" + e);
+            JOptionPane.showMessageDialog(tela, "Não foi possível estabelecer conexão: " + e);
         }
     }
 
@@ -70,11 +72,12 @@ public class Cliente extends Thread {
                     JOptionPane.showMessageDialog(tela, "É necessário digitar uma mensagem para ser enviada!");
                 } else {
                     try {
-                        out.println(mensagem);
+                        byte[] mensagemCifrada = criptografar(mensagem);
+                        out.write(mensagemCifrada);
                         out.flush();
                         tela.campoDigitacao.setText("");
                     } catch (Exception exception) {
-                        JOptionPane.showMessageDialog(tela, "Não foi possível enviar a mensagem" + exception);
+                        JOptionPane.showMessageDialog(tela, "Não foi possível enviar a mensagem: " + exception);
                     }
                 }
             }
@@ -83,25 +86,49 @@ public class Cliente extends Thread {
 
     public void run() {
         try {
-            BufferedReader entrada =
-                    new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
+            in = this.socket.getInputStream();
             while (conexaoEstabelecida) {
-                String novaMensagem = entrada.readLine();
-                tela.chat.setText(tela.chat.getText() + novaMensagem + "\n");
+                byte[] buffer = new byte[1024];
+                int bytesLidos = in.read(buffer);
+                byte[] mensagemCifrada = Arrays.copyOf(buffer, bytesLidos);
+                String mensagemDecifrada = descriptograr(mensagemCifrada);
+                tela.chat.setText(tela.chat.getText() + mensagemDecifrada + "\n");
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(tela, "Não foi possível receber a mensagem do servidor" + e);
+            JOptionPane.showMessageDialog(tela, "Não foi possível receber a mensagem do servidor: " + e);
         }
     }
 
-    public static PublicKey converterPublicKey(String chavePublicaString){
+    public static PublicKey converterPublicKey(String chavePublicaString) {
         byte[] encoded = Base64.getDecoder().decode(chavePublicaString);
         try {
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePublic(keySpec);
-        } catch (Exception e){
-            System.out.println("Não foi possível converter a chave pública.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(tela, "Não foi possível converter a chave pública: " + e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static byte[] criptografar(String mensagem) {
+        try {
+            final Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+            return cipher.doFinal(mensagem.getBytes());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(tela, "Não foi possível criptografar a mensagem: " + e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static String descriptograr(byte[] textoCifrado) {
+        try {
+            final Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, publicKey);
+            return new String(cipher.doFinal(textoCifrado));
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(tela, "Não foi possível descriptografar a mensagem: " + e);
             throw new RuntimeException(e);
         }
     }
