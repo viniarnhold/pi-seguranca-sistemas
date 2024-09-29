@@ -14,10 +14,11 @@ import java.util.Base64;
 
 public class Cliente extends Thread {
 
-    private static String FECHAR_SOCKET = "CLOSECONECTION";
+    private static String FECHAR_SOCKET = "SAIU DO CHAT";
     private static String CHAVE_PUBLICA = "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCZILVQdhKkRU0hLg4E9CKUbpci8kpm9VWXZ3bZvnduOJZuqnwk5huXIVmChoW6qdHO02XcXXYoFaJ7qVAzc9llfvRz23FeuqYoyJz5jZ02rP7oMuw+Sp74o0MNq6TxDLheYI6CWOG3YZSUmxwow8u2eYGR3lRf139MojG7vnMIBwIDAQAB";
     private static PublicKey publicKey;
     private static Socket socket;
+    private static String identificacao;
     private static boolean conexaoEstabelecida;
     private static InputStream in;
     private static OutputStream out;
@@ -38,10 +39,7 @@ public class Cliente extends Thread {
             public void windowClosing(WindowEvent e) {
                 try {
                     if (conexaoEstabelecida) {
-                        String mensagem = FECHAR_SOCKET;
-                        byte[] mensagemCifrada = criptografar(mensagem);
-                        out.write(mensagemCifrada);
-                        out.flush();
+                        enviarMensagem(FECHAR_SOCKET);
                         in.close();
                         out.close();
                         socket.close();
@@ -57,6 +55,12 @@ public class Cliente extends Thread {
             Socket socket = new Socket("localhost", 8084);
             out = socket.getOutputStream();
             conexaoEstabelecida = true;
+            identificacao = JOptionPane.showInputDialog(tela, "Insira sua identificação:");
+            while(identificacao.isBlank()){
+                JOptionPane.showMessageDialog(tela, "A identificação não pode ser vazia!");
+                identificacao = JOptionPane.showInputDialog(tela, "Insira sua identificação:");
+            }
+            JOptionPane.showMessageDialog(tela, "Seja bem vindo: " + identificacao);
             Thread thread = new Cliente(socket);
             thread.start();
         } catch (Exception e) {
@@ -71,14 +75,8 @@ public class Cliente extends Thread {
                 if (mensagem.isBlank()) {
                     JOptionPane.showMessageDialog(tela, "É necessário digitar uma mensagem para ser enviada!");
                 } else {
-                    try {
-                        byte[] mensagemCifrada = criptografar(mensagem);
-                        out.write(mensagemCifrada);
-                        out.flush();
-                        tela.campoDigitacao.setText("");
-                    } catch (Exception exception) {
-                        JOptionPane.showMessageDialog(tela, "Não foi possível enviar a mensagem: " + exception);
-                    }
+                    enviarMensagem(mensagem);
+                    tela.campoDigitacao.setText("");
                 }
             }
         }
@@ -96,6 +94,16 @@ public class Cliente extends Thread {
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(tela, "Não foi possível receber a mensagem do servidor: " + e);
+        }
+    }
+
+    public static void enviarMensagem(String mensagem){
+        try {
+            byte[] mensagemCifrada = criptografar(identificacao.concat(": ").concat(mensagem));
+            out.write(mensagemCifrada);
+            out.flush();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(tela, "Não foi possível enviar a mensagem: " + e);
         }
     }
 
